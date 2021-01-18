@@ -31,6 +31,7 @@ import Ormolu.Parser.Result
 import Ormolu.Printer
 import Ormolu.Utils (showOutputable)
 import qualified SrcLoc as GHC
+import System.IO
 
 -- | Format a 'String', return formatted version as 'Text'.
 --
@@ -103,7 +104,12 @@ ormoluFile ::
   -- | Resulting rendition
   m Text
 ormoluFile cfg path =
-  liftIO (readFile path) >>= ormolu cfg path
+  liftIO readUtf8File >>= ormolu cfg path
+  where
+    readUtf8File = do
+      h <- openFile path ReadMode
+      hSetEncoding h utf8
+      hGetContents h
 
 -- | Read input from stdin and format it.
 --
@@ -116,7 +122,9 @@ ormoluStdin ::
   -- | Resulting rendition
   m Text
 ormoluStdin cfg =
-  liftIO getContents >>= ormolu cfg "<stdin>"
+  liftIO getUtf8Contents >>= ormolu cfg "<stdin>"
+  where
+    getUtf8Contents = hSetEncoding stdin utf8 >> getContents
 
 ----------------------------------------------------------------------------
 -- Helpers

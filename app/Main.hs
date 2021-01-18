@@ -22,7 +22,7 @@ import Ormolu.Utils (showOutputable)
 import Paths_ormolu (version)
 import System.Exit (ExitCode (..), exitWith)
 import qualified System.FilePath as FP
-import System.IO (hPutStrLn, stderr)
+import System.IO (hPutStrLn, stderr, openFile, IOMode(ReadMode), hSetEncoding, utf8)
 
 -- | Entry point of the program.
 main :: IO ()
@@ -73,7 +73,7 @@ formatOne mode config mpath = withPrettyOrmoluExceptions (cfgColorMode config) $
           -- 101 is different from all the other exit codes we already use.
           return (ExitFailure 101)
     Just inputFile -> do
-      originalInput <- TIO.readFile inputFile
+      originalInput <- readUtf8FileText inputFile
       formattedInput <- ormoluFile config inputFile
       case mode of
         Stdout -> do
@@ -95,6 +95,11 @@ formatOne mode config mpath = withPrettyOrmoluExceptions (cfgColorMode config) $
               -- either from an 'OrmoluException' or from 'error' and
               -- 'notImplemented'.
               return (ExitFailure 100)
+  where
+    readUtf8FileText inputFile = do
+      h <- openFile inputFile ReadMode
+      hSetEncoding h utf8
+      TIO.hGetContents h
 
 ----------------------------------------------------------------------------
 -- Command line options parsing
